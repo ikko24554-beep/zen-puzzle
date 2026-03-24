@@ -1,0 +1,152 @@
+<script>
+const size = 10;
+const cell = 30;
+
+// Zen の最大値（2^64 - 1）
+const ZMAX = (2n ** 64n) - 1n;
+
+let grid = [];
+let values = [];
+
+let current = "ADD";
+
+// 目標値も Zen で扱う
+let target = ZMAX * 75n / 100n;   // 0.75
+let tolerance = ZMAX / 20n;       // ±5%
+
+function init(){
+  grid = Array.from({length: size}, () => Array(size).fill("EMPTY"));
+  values = Array.from({length: size}, () => Array(size).fill(0n));
+}
+
+init();
+
+function setBlock(type){
+  current = type;
+}
+
+function randomZen(){
+  // 0〜ZMAX のランダム整数
+  return BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)) *
+         (ZMAX / BigInt(Number.MAX_SAFE_INTEGER));
+}
+
+function randomize(){
+  for(let y=0;y<size;y++){
+    for(let x=0;x<size;x++){
+      if(grid[y][x] === "IN"){
+        values[y][x] = randomZen();
+      }
+    }
+  }
+}
+
+function reset(){
+  init();
+}
+
+canvas.addEventListener("touchstart", handleInput);
+canvas.addEventListener("mousedown", handleInput);
+
+function handleInput(e){
+  e.preventDefault();
+
+  let rect = canvas.getBoundingClientRect();
+  let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+  let gx = Math.floor((clientX - rect.left) / cell);
+  let gy = Math.floor((clientY - rect.top) / cell);
+
+  if(gx < 0 || gy < 0 || gx >= size || gy >= size) return;
+
+  grid[gy][gx] = current;
+
+  if(current === "IN"){
+    values[gy][gx] = randomZen();
+  }
+}
+
+function update(){
+  let newVals = values.map(row => row.slice());
+
+  for(let y=0;y<size;y++){
+    for(let x=0;x<size;x++){
+      let left = x > 0 ? values[y][x-1] : 0n;
+      let up   = y > 0 ? values[y-1][x] : 0n;
+
+      switch(grid[y][x]){
+        case "ADD":
+          newVals[y][x] = (left + up > ZMAX) ? ZMAX : left + up;
+          break;
+
+        case "MUL":
+          newVals[y][x] = (left * up) / ZMAX;
+          break;
+
+        case "EMPTY":
+          newVals[y][x] = newVals[y][x] * 95n / 100n;
+          break;
+      }
+    }
+  }
+
+  values = newVals;
+}
+
+function draw(){
+  for(let y=0;y<size;y++){
+    for(let x=0;x<size;x++){
+      let v = values[y][x];
+
+      // Zen → 0〜255 に変換
+      let r = Number((v * 255n) / ZMAX);
+      let b = 255 - r;
+
+      ctx.fillStyle = `rgb(${r},0,${b})`;
+      ctx.fillRect(x*cell,y*cell,cell,cell);
+
+      ctx.strokeStyle = "gray";
+      ctx.strokeRect(x*cell,y*cell,cell,cell);
+
+      if(grid[y][x] === "OUT"){
+        ctx.fillStyle = "black";
+        ctx.beginPath();
+        ctx.arc(x*cell + cell/2, y*cell + cell/2, 4, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+  }
+}
+
+function checkWin(){
+  for(let y=0;y<size;y++){
+    for(let x=0;x<size;x++){
+      if(grid[y][x] === "OUT"){
+        let v = values[y][x];
+        if(v > target - tolerance && v < target + tolerance){
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+function loop(){
+  update();
+  draw();
+
+  document.getElementById("info").innerText =
+    "Target (Zen): " + target.toString();
+
+  if(checkWin()){
+    alert("クリア！");
+    reset();
+  }
+
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
