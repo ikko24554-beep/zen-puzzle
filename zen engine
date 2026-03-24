@@ -1,0 +1,85 @@
+class ZenEngine {
+  constructor(size){
+    this.size = size;
+
+    this.grid   = this.makeGrid("EMPTY");
+    this.values = this.makeGrid(0n);
+    this.wires  = this.makeGrid([]);   // Zen-Circuit
+    this.entropy = this.makeGrid(0n);  // Zen-Entropy
+  }
+
+  makeGrid(defaultValue){
+    return Array.from({length: this.size}, () =>
+      Array.from({length: this.size}, () =>
+        JSON.parse(JSON.stringify(defaultValue))
+      )
+    );
+  }
+
+  /* Zen-Gate */
+  gate(type, a, b){
+    switch(type){
+      case "ADD": return (a+b > ZMAX ? ZMAX : a+b);
+      case "MUL": return (a*b) / ZMAX;
+      case "MAX": return a>b ? a : b;
+      case "MIN": return a<b ? a : b;
+      case "XOR": return a ^ b;
+      case "SHL": return (a << Number(b % 64n)) & ZMAX;
+      case "SHR": return a >> Number(b % 64n);
+      case "CLAMP": return a>b ? b : a;
+      default: return a;
+    }
+  }
+
+  /* Zen-Flow */
+  flow(v){
+    return v * 99n / 100n;
+  }
+
+  /* Zen-Entropy */
+  computeEntropy(v){
+    // 情報量 = -log2(p) を整数で近似
+    if(v === 0n) return 0n;
+    return BigInt( Math.floor(Math.log2(Number(v))) );
+  }
+
+  /* Zen-Circuit: wires[y][x] = [{from:{x,y}}...] */
+  getInputs(x,y){
+    let inputs = [];
+    for(let w of this.wires[y][x]){
+      inputs.push(this.values[w.from.y][w.from.x]);
+    }
+    return inputs;
+  }
+
+  /* Update */
+  update(){
+    let newVals = this.values.map(r => r.slice());
+    let newEntropy = this.entropy.map(r => r.slice());
+
+    for(let y=0;y<this.size;y++){
+      for(let x=0;x<this.size;x++){
+
+        let type = this.grid[y][x];
+        let inputs = this.getInputs(x,y);
+
+        if(inputs.length === 0){
+          newVals[y][x] = this.flow(newVals[y][x]);
+        }
+        else if(inputs.length === 1){
+          newVals[y][x] = inputs[0];
+        }
+        else if(inputs.length >= 2){
+          let a = inputs[0];
+          let b = inputs[1];
+          newVals[y][x] = this.gate(type, a, b);
+        }
+
+        newEntropy[y][x] = this.computeEntropy(newVals[y][x]);
+      }
+    }
+
+    this.values = newVals;
+    this.entropy = newEntropy;
+  }
+}
