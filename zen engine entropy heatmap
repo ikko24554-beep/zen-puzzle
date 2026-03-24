@@ -1,0 +1,13 @@
+function drawEntropy(){
+  for(let y=0;y<size;y++){
+    for(let x=0;x<size;x++){
+      let e = entropy[y][x];
+
+      // 0〜255 に正規化
+      let heat = Number(e % 256n);
+
+      ctx.fillStyle = `rgb(${heat}, ${0}, ${255-heat})`;
+      ctx.fillRect(x*cell, y*cell, cell, cell);
+    }
+  }
+}
