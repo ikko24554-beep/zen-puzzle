@@ -1,0 +1,48 @@
+/* ============================
+   Zen-Circuit: 配線
+============================ */
+
+// wires[y][x] = [{from:{x,y}}...]
+
+function addWire(x1, y1, x2, y2){
+  // マンハッタン経路を生成
+  let path = [];
+
+  let x = x1, y = y1;
+
+  while(x !== x2){
+    x += (x2 > x ? 1 : -1);
+    path.push({x, y});
+  }
+  while(y !== y2){
+    y += (y2 > y ? 1 : -1);
+    path.push({x, y});
+  }
+
+  // path の各セルに "from" を登録
+  for(let p of path){
+    wires[p.y][p.x].push({from:{x:x1, y:y1}});
+  }
+}
+
+/* ============================
+   ZenEngine.getInputs を拡張
+============================ */
+ZenEngine.prototype.getInputs = function(x,y){
+  let inputs = [];
+
+  // 配線からの入力
+  for(let w of this.wires[y][x]){
+    inputs.push(this.values[w.from.y][w.from.x]);
+  }
+
+  // 2つ以上ある場合は Zen 的に選択
+  if(inputs.length > 2){
+    // Zen-Rule: 最大値と最小値を採用
+    let max = inputs.reduce((a,b)=>a>b?a:b);
+    let min = inputs.reduce((a,b)=>a<b?a:b);
+    return [max, min];
+  }
+
+  return inputs;
+};
