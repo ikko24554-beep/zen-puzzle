@@ -1,1 +1,189 @@
 # zen-puzzle
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZenCPU Puzzle</title>
+
+<style>
+body {
+  text-align: center;
+  font-family: sans-serif;
+  background: #f5f5f5;
+}
+
+canvas {
+  border: 2px solid black;
+  touch-action: none;
+}
+
+button {
+  margin: 5px;
+  padding: 10px;
+  font-size: 16px;
+}
+
+#info {
+  margin: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<h2>ZenCPU Puzzle</h2>
+<div id="info"></div>
+
+<canvas id="c" width="300" height="300"></canvas>
+
+<br>
+
+<button onclick="setBlock('ADD')">ADD</button>
+<button onclick="setBlock('MUL')">MUL</button>
+<button onclick="setBlock('IN')">IN</button>
+<button onclick="setBlock('OUT')">OUT</button>
+<br>
+<button onclick="randomize()">RANDOM</button>
+<button onclick="reset()">RESET</button>
+
+<script>
+const size = 10;
+const cell = 30;
+
+let grid = [];
+let values = [];
+
+let current = "ADD";
+let target = 0.75;
+let tolerance = 0.05;
+
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+
+function init(){
+  grid = Array(size).fill().map(()=>Array(size).fill("EMPTY"));
+  values = Array(size).fill().map(()=>Array(size).fill(0));
+}
+
+init();
+
+function setBlock(type){
+  current = type;
+}
+
+function randomize(){
+  for(let y=0;y<size;y++){
+    for(let x=0;x<size;x++){
+      if(grid[y][x] === "IN"){
+        values[y][x] = Math.random();
+      }
+    }
+  }
+}
+
+function reset(){
+  init();
+}
+
+canvas.addEventListener("touchstart", handleInput);
+canvas.addEventListener("mousedown", handleInput);
+
+function handleInput(e){
+  let rect = canvas.getBoundingClientRect();
+  let clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  let clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+  let x = clientX - rect.left;
+  let y = clientY - rect.top;
+
+  let gx = Math.floor(x / cell);
+  let gy = Math.floor(y / cell);
+
+  if(gx < 0 || gy < 0 || gx >= size || gy >= size) return;
+
+  grid[gy][gx] = current;
+
+  if(current === "IN"){
+    values[gy][gx] = Math.random();
+  }
+}
+
+function update(){
+  let newVals = values.map(row => row.slice());
+
+  for(let y=0;y<size;y++){
+    for(let x=0;x<size;x++){
+      let left = x > 0 ? values[y][x-1] : 0;
+      let up   = y > 0 ? values[y-1][x] : 0;
+
+      if(grid[y][x] === "ADD"){
+        newVals[y][x] = Math.min(left + up, 1);
+      }
+      else if(grid[y][x] === "MUL"){
+        newVals[y][x] = left * up;
+      }
+      else if(grid[y][x] === "EMPTY"){
+        newVals[y][x] *= 0.95;
+      }
+    }
+  }
+
+  values = newVals;
+}
+
+function draw(){
+  for(let y=0;y<size;y++){
+    for(let x=0;x<size;x++){
+      let v = values[y][x];
+
+      ctx.fillStyle = `rgb(${v*255},0,${255-v*255})`;
+      ctx.fillRect(x*cell,y*cell,cell,cell);
+
+      ctx.strokeStyle = "gray";
+      ctx.strokeRect(x*cell,y*cell,cell,cell);
+
+      if(grid[y][x] === "OUT"){
+        ctx.fillStyle = "black";
+        ctx.beginPath();
+        ctx.arc(x*cell + cell/2, y*cell + cell/2, 4, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+  }
+}
+
+function checkWin(){
+  for(let y=0;y<size;y++){
+    for(let x=0;x<size;x++){
+      if(grid[y][x] === "OUT"){
+        let v = values[y][x];
+        if(Math.abs(v - target) < tolerance){
+          return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+function loop(){
+  update();
+  draw();
+
+  document.getElementById("info").innerText =
+    "Target: " + target.toFixed(2);
+
+  if(checkWin()){
+    alert("クリア！");
+    reset();
+  }
+
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+
+</body>
+</html>
