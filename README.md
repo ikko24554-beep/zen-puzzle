@@ -236,3 +236,102 @@ IN セルに新しい Zen 値を注入。
 
 
 
+
+# ZenCPU Puzzle  
+An interactive prototype of the **Zen‑Universe computation model**, built entirely with integer‑based logic.  
+This project demonstrates:
+
+- Zen Integer Arithmetic (Ƶ)
+- Zen Gates (ADD / MUL / MAX / MIN / XOR)
+- Zen Flow (value decay)
+- Zen Circuit (wire routing)
+- Zen Entropy (information heatmap)
+- Interactive grid‑based Zen CPU
+
+Everything runs in a single HTML file.
+
+---
+
+## 🧠 What is ZenCPU?
+
+**ZenCPU** is a cellular, integer‑driven computational model based on the idea:
+
+> “The universe does not compute with floating points.  
+>  It computes with integers.”
+
+Each cell stores a **Zen integer (0 to 2³²−1)**.  
+Values flow, combine, decay, and generate entropy.  
+Wires allow arbitrary routing between cells, forming circuits.
+
+This prototype is a sandbox for exploring:
+
+- integer‑only computation  
+- emergent patterns  
+- information flow  
+- entropy dynamics  
+- circuit behavior  
+- early Zen‑Life structures  
+
+---
+
+## 🎮 How to Use
+
+### 1. Place Gates
+Click a gate button → click a cell.
+
+### 2. IN / OUT
+- **IN** generates random Zen values  
+- **OUT** is a marker (visual only)
+
+### 3. Draw Wires
+- Hold mouse down on a cell  
+- Drag to another cell  
+- A Manhattan‑path wire is created  
+- Wires carry Zen values
+
+### 4. Switch Display Mode
+`VALUE` → shows Zen values  
+`ENTROPY` → shows information heatmap
+
+### 5. Randomize IN
+Injects new Zen values into all IN cells.
+
+### 6. Reset
+Clears the grid.
+
+---
+
+## 🌈 Display Modes
+
+### VALUE Mode
+- Red = high Zen value  
+- Blue = low Zen value  
+- Wires glow with the value they carry
+
+### ENTROPY Mode
+- Red = high information content  
+- Blue = low information content  
+- Entropy = log₂(value) + |Δvalue|
+
+---
+
+## 🧩 Zen Gates
+
+| Gate | Operation |
+|------|-----------|
+| ADD | Saturating add |
+| MUL | Normalized multiply |
+| MAX | Maximum |
+| MIN | Minimum |
+| XOR | Bitwise XOR |
+
+All operations are **pure integer arithmetic**.
+
+---
+
+## 🔥 Zen Flow
+
+Cells with no inputs slowly decay:
+I will get ignovel!
+
+
