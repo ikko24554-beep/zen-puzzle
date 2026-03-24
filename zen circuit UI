@@ -1,0 +1,15 @@
+let wireStart = null;
+
+canvas.addEventListener("mousedown", e=>{
+  let {gx, gy} = getGridPos(e);
+  wireStart = {x:gx, y:gy};
+});
+
+canvas.addEventListener("mouseup", e=>{
+  if(!wireStart) return;
+
+  let {gx, gy} = getGridPos(e);
+  addWire(wireStart.x, wireStart.y, gx, gy);
+
+  wireStart = null;
+});
