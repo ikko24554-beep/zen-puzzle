@@ -1,0 +1,105 @@
+<script>
+/* ============================
+   Zen Constants
+============================ */
+const ZMAX = (2n ** 64n) - 1n;
+const Z0   = 0n;
+
+/* ============================
+   Grid Setup
+============================ */
+const size = 10;
+const cell = 30;
+
+let grid = [];
+let values = [];
+let wires = [];   // ← Zen‑Circuit 用（後で実装）
+
+let current = "ADD";
+
+/* ============================
+   Initialize
+============================ */
+function init(){
+  grid = Array.from({length: size}, () => Array(size).fill("EMPTY"));
+  values = Array.from({length: size}, () => Array(size).fill(Z0));
+  wires  = Array.from({length: size}, () => Array(size).fill(null));
+}
+
+init();
+
+/* ============================
+   Zen Random
+============================ */
+function randomZen(){
+  return BigInt(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER)) *
+         (ZMAX / BigInt(Number.MAX_SAFE_INTEGER));
+}
+
+/* ============================
+   Zen Gates
+============================ */
+const ZenGate = {
+  ADD: (a,b) => (a+b > ZMAX ? ZMAX : a+b),
+  MUL: (a,b) => (a*b) / ZMAX,
+  MAX: (a,b) => (a>b ? a : b),
+  MIN: (a,b) => (a<b ? a : b),
+  XOR: (a,b) => a ^ b,
+  SHL: (a,b) => (a << Number(b % 64n)) & ZMAX,
+  SHR: (a,b) => a >> Number(b % 64n),
+  CLAMP: (a,b) => (a > b ? b : a)
+};
+
+/* ============================
+   Zen Flow (保存則)
+============================ */
+function zenFlowDecay(v){
+  return v * 99n / 100n;  // 1% 減衰
+}
+
+/* ============================
+   Update Loop
+============================ */
+function update(){
+  let newVals = values.map(r => r.slice());
+
+  for(let y=0;y<size;y++){
+    for(let x=0;x<size;x++){
+
+      let left = x>0 ? values[y][x-1] : Z0;
+      let up   = y>0 ? values[y-1][x] : Z0;
+
+      let type = grid[y][x];
+
+      if(ZenGate[type]){
+        newVals[y][x] = ZenGate[type](left, up);
+      }
+      else if(type === "EMPTY"){
+        newVals[y][x] = zenFlowDecay(newVals[y][x]);
+      }
+    }
+  }
+
+  values = newVals;
+}
+
+/* ============================
+   Draw
+============================ */
+function draw(){
+  for(let y=0;y<size;y++){
+    for(let x=0;x<size;x++){
+      let v = values[y][x];
+
+      let r = Number((v * 255n) / ZMAX);
+      let b = 255 - r;
+
+      ctx.fillStyle = `rgb(${r},0,${b})`;
+      ctx.fillRect(x*cell,y*cell,cell,cell);
+
+      ctx.strokeStyle = "gray";
+      ctx.strokeRect(x*cell,y*cell,cell,cell);
+    }
+  }
+}
+</script>
