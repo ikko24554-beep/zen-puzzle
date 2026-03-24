@@ -1,0 +1,15 @@
+function drawWires(){
+  for(let y=0;y<size;y++){
+    for(let x=0;x<size;x++){
+      for(let w of wires[y][x]){
+        let v = values[w.from.y][w.from.x];
+
+        let r = Number((v * 255n) / ZMAX);
+        let b = 255 - r;
+
+        ctx.fillStyle = `rgba(${r},0,${b},0.6)`;
+        ctx.fillRect(x*cell+10, y*cell+10, 10, 10);
+      }
+    }
+  }
+}
