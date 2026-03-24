@@ -81,3 +81,24 @@ This produces stable, interpretable behavior.
 ## 🧪 Zen Entropy
 
 Entropy is computed per cell:
+
+
+
+
+This measures:
+
+- information content  
+- change  
+- instability  
+- computational “heat”  
+
+Entropy is the foundation for future Zen‑Life experiments.
+
+---
+
+## 📁 Project Structure
+
+
+
+
+
