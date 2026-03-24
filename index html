@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ZenCPU Puzzle</title>
+<style>
+  body {
+    text-align: center;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #111;
+    color: #eee;
+  }
+  canvas {
+    border: 2px solid #444;
+    touch-action: none;
+    background: #000;
+  }
+  button {
+    margin: 4px;
+    padding: 6px 10px;
+    font-size: 14px;
+    background: #222;
+    color: #eee;
+    border: 1px solid #555;
+    cursor: pointer;
+  }
+  button:hover {
+    background: #333;
+  }
+  #info {
+    margin: 8px;
+    font-size: 14px;
+  }
+</style>
+</head>
+<body>
+
+<h2>ZenCPU Puzzle</h2>
+<div id="info"></div>
+
+<canvas id="c" width="300" height="300"></canvas>
+
+<br>
+
+<div>
+  <button data-gate="ADD">ADD</button>
+  <button data-gate="MUL">MUL</button>
+  <button data-gate="MAX">MAX</button>
+  <button data-gate="MIN">MIN</button>
+  <button data-gate="XOR">XOR</button>
+</div>
+<div>
+  <button data-gate="IN">IN</button>
+  <button data-gate="OUT">OUT</button>
+  <button id="modeBtn">MODE: VALUE</button>
+</div>
+<div>
+  <button id="randomBtn">RANDOM IN</button>
+  <button id="resetBtn">RESET</button>
+</div>
+
+<script>
+/* ============================
+   Zen Constants
+============================ */
+const ZMAX = (2n ** 32n) - 1n; // 32bit にしてブラウザ負荷軽減
+const Z0   = 0n;
+
+/* ============================
+   Grid Setup
+============================ */
+const size = 10;
+const cell = 30;
+
+let grid   = [];
+let values = [];
+let wires  = [];   // wires[y][x] = [{from:{x,y}}]
+let entropy = [];
+
+let currentGate = "ADD";
+let mode = "VALUE"; // or "ENTROPY"
+
+const canvas = document.getElementById("c");
+const ctx = canvas.getContext("2d");
+const info = document.getElementById("info");
+
+/* ============================
+   Init
+============================ */
+function makeGrid(defaultValue){
+  return Array.from({length: size}, () =>
+    Array.from({length: size}, () =>
+      typeof defaultValue === "object"
+        ? JSON.parse(JSON.stringify(defaultValue))
+        : defaultValue
+    )
+  );
+}
+
+function init(){
+  grid    = makeGrid("EMPTY");
+  values  = makeGrid(Z0);
+  wires   = makeGrid([]);
+  entropy = makeGrid(Z0);
+}
+
+init();
+
+/* ============================
+   Zen Random
+============================ */
+function randomZen(){
+  const r = Math.floor(Math.random() * Number.MAX_SAFE_INTEGER);
+  return BigInt(r) * (ZMAX / BigInt(Number.MAX_SAFE_INTEGER));
+}
+
+/* ============================
+   Zen Gates
+============================ */
+function zenGate(type, a, b){
+  switch(type){
+    case "ADD": return (a + b > ZMAX ? ZMAX : a + b);
+    case "MUL": return (a * b) / ZMAX;
+    case "MAX": return a > b ? a : b;
+    case "MIN": return a < b ? a : b;
+    case "XOR": return a ^ b;
+    default:    return a;
+  }
+}
+
+/* ============================
+   Zen Flow
+============================ */
+function zenFlow(v){
+  return v * 99n / 100n; // 1% 減衰
+}
+
+/* ============================
+   Entropy
+============================ */
+let prevValues = null;
+
+function computeEntropy(v, prev){
+  if(v === Z0) return 0n;
+  const logv = BigInt(Math.floor(Math.log2(Number(v))));
+  const diff = v > prev ? v - prev : prev - v;
+  const scaled = diff / (ZMAX / 256n);
+  return logv + scaled;
+}
+
+/* ============================
+   Circuit (wires)
+============================ */
+function addWire(x1, y1, x2, y2){
+  let path = [];
+  let x = x1, y = y1;
+
+  while(x !== x2){
+    x += (x2 > x ? 1 : -1);
+    path.push({x, y});
+  }
+  while(y !== y2){
+    y += (y2 > y ? 1 : -1);
+    path.push({x, y});
+  }
+
+  for(const p of path){
+    wires[p.y][p.x].push({from:{x:x1, y:y1}});
+  }
+}
+
+function getInputs(x,y){
+  const inputs = [];
+  for(const w of wires[y][x]){
+    inputs.push(values[w.from.y][w.from.x]);
+  }
+  if(inputs.length > 2){
+    let max = inputs[0];
+    let min = inputs[0];
+    for(const v of inputs){
+      if(v > max) max = v;
+      if(v < min) min = v;
+    }
+    return [max, min];
+  }
+  return inputs;
+}
+
+/* ============================
+   Update
+============================ */
+function update(){
+  const newVals = values.map(r => r.slice());
+  const newEntropy = entropy.map(r => r.slice());
+
+  if(!prevValues){
+    prevValues = values.map(r => r.slice());
+  }
+
+  for(let y=0;y<size;y++){
+    for(let x=0;x<size;x++){
+      const type = grid[y][x];
+      const inputs = getInputs(x,y);
+
+      if(type === "IN"){
+        // IN は値を保持（外部からランダム注入）
+      } else if(inputs.length === 0){
+        newVals[y][x] = zenFlow(newVals[y][x]);
+      } else if(inputs.length === 1){
+        newVals[y][x] = inputs[0];
+      } else {
+        newVals[y][x] = zenGate(type, inputs[0], inputs[1]);
+      }
+
+      newEntropy[y][x] = computeEntropy(newVals[y][x], prevValues[y][x]);
+    }
+  }
+
+  prevValues = values;
+  values = newVals;
+  entropy = newEntropy;
+}
+
+/* ============================
+   Draw
+============================ */
+function drawValues(){
+  for(let y=0;y<size;y++){
+    for(let x=0;x<size;x++){
+      const v = values[y][x];
+      const r = Number((v * 255n) / ZMAX);
+      const b = 255 - r;
+
+      ctx.fillStyle = `rgb(${r},0,${b})`;
+      ctx.fillRect(x*cell, y*cell, cell, cell);
+
+      ctx.strokeStyle = "#333";
+      ctx.strokeRect(x*cell, y*cell, cell, cell);
+
+      if(grid[y][x] === "OUT"){
+        ctx.fillStyle = "#fff";
+        ctx.beginPath();
+        ctx.arc(x*cell + cell/2, y*cell + cell/2, 4, 0, Math.PI*2);
+        ctx.fill();
+      }
+    }
+  }
+}
+
+function drawEntropy(){
+  for(let y=0;y<size;y++){
+    for(let x=0;x<size;x++){
+      const e = entropy[y][x];
+      const heat = Number(e % 256n);
+      ctx.fillStyle = `rgb(${heat},0,${255-heat})`;
+      ctx.fillRect(x*cell, y*cell, cell, cell);
+
+      ctx.strokeStyle = "#333";
+      ctx.strokeRect(x*cell, y*cell, cell, cell);
+    }
+  }
+}
+
+function drawWires(){
+  for(let y=0;y<size;y++){
+    for(let x=0;x<size;x++){
+      for(const w of wires[y][x]){
+        const v = values[w.from.y][w.from.x];
+        const r = Number((v * 255n) / ZMAX);
+        const b = 255 - r;
+        ctx.fillStyle = `rgba(${r},0,${b},0.7)`;
+        ctx.fillRect(x*cell+10, y*cell+10, 10, 10);
+      }
+    }
+  }
+}
+
+function draw(){
+  if(mode === "VALUE"){
+    drawValues();
+  } else {
+    drawEntropy();
+  }
+  drawWires();
+}
+
+/* ============================
+   Input Handling
+============================ */
+function getGridPos(e){
+  const rect = canvas.getBoundingClientRect();
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  const gx = Math.floor((clientX - rect.left) / cell);
+  const gy = Math.floor((clientY - rect.top) / cell);
+  return {gx, gy};
+}
+
+let wireStart = null;
+
+canvas.addEventListener("mousedown", e=>{
+  e.preventDefault();
+  const {gx, gy} = getGridPos(e);
+  if(gx<0 || gy<0 || gx>=size || gy>=size) return;
+
+  if(currentGate === "WIRE"){
+    wireStart = {x:gx, y:gy};
+  } else {
+    grid[gy][gx] = currentGate;
+    if(currentGate === "IN"){
+      values[gy][gx] = randomZen();
+    }
+  }
+});
+
+canvas.addEventListener("mouseup", e=>{
+  e.preventDefault();
+  if(!wireStart) return;
+  const {gx, gy} = getGridPos(e);
+  if(gx<0 || gy<0 || gx>=size || gy>=size) return;
+  addWire(wireStart.x, wireStart.y, gx, gy);
+  wireStart = null;
+});
+
+/* ============================
+   UI Buttons
+============================ */
+document.querySelectorAll("button[data-gate]").forEach(btn=>{
+  btn.addEventListener("click", ()=>{
+    currentGate = btn.getAttribute("data-gate");
+  });
+});
+
+document.getElementById("randomBtn").addEventListener("click", ()=>{
+  for(let y=0;y<size;y++){
+    for(let x=0;x<size;x++){
+      if(grid[y][x] === "IN"){
+        values[y][x] = randomZen();
+      }
+    }
+  }
+});
+
+document.getElementById("resetBtn").addEventListener("click", ()=>{
+  init();
+});
+
+document.getElementById("modeBtn").addEventListener("click", e=>{
+  mode = (mode === "VALUE") ? "ENTROPY" : "VALUE";
+  e.target.textContent = "MODE: " + mode;
+});
+
+/* ============================
+   Main Loop
+============================ */
+function loop(){
+  update();
+  draw();
+  info.textContent = `MODE: ${mode} / GATE: ${currentGate}`;
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+
+</body>
+</html>
