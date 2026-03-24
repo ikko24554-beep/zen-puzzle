@@ -1,0 +1,22 @@
+/* ============================
+   Zen-Entropy（情報量）
+============================ */
+
+// 前フレームの値を保存
+let prevValues = null;
+
+// Entropy 計算
+function computeEntropy(v, prev){
+  if(v === 0n) return 0n;
+
+  // log2(v) を整数で近似
+  let logv = BigInt(Math.floor(Math.log2(Number(v))));
+
+  // 変化量
+  let diff = v > prev ? v - prev : prev - v;
+
+  // 正規化して足す
+  let diffScaled = diff / (ZMAX / 256n);
+
+  return logv + diffScaled;
+}
