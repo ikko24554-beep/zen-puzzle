@@ -1,0 +1,33 @@
+function update(){
+  let newVals = values.map(r => r.slice());
+  let newEntropy = entropy.map(r => r.slice());
+
+  if(!prevValues){
+    prevValues = values.map(r => r.slice());
+  }
+
+  for(let y=0;y<size;y++){
+    for(let x=0;x<size;x++){
+
+      let type = grid[y][x];
+      let inputs = engine.getInputs(x,y);
+
+      if(inputs.length === 0){
+        newVals[y][x] = engine.flow(newVals[y][x]);
+      }
+      else if(inputs.length === 1){
+        newVals[y][x] = inputs[0];
+      }
+      else {
+        newVals[y][x] = engine.gate(type, inputs[0], inputs[1]);
+      }
+
+      // Entropy 計算
+      newEntropy[y][x] = computeEntropy(newVals[y][x], prevValues[y][x]);
+    }
+  }
+
+  prevValues = values;
+  values = newVals;
+  entropy = newEntropy;
+}
