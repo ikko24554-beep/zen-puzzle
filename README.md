@@ -33,3 +33,13 @@ This prototype is a playground for exploring:
 - entropy dynamics  
 - circuit behavior  
 - early
+
+
+
+This creates natural gradients and prevents runaway growth.
+
+---
+
+## 🔌 Zen Circuit (Wires)
+
+Wires are directional connections:
