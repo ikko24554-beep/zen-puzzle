@@ -102,3 +102,35 @@ Entropy is the foundation for future Zen‑Life experiments.
 
 
 
+No build tools, no dependencies.  
+Just open `index.html` in a browser.
+
+---
+
+## 🛠 Future Extensions
+
+This prototype is designed to evolve into:
+
+- Zen‑Life (self‑replicating structures)
+- Zen‑Compiler (circuit ⇄ expression)
+- Zen‑Geometry (2D → 3D Zen space)
+- Zen‑Flow Networks
+- Zen‑Organisms
+
+---
+
+## 📜 License
+
+MIT License  
+Feel free to fork, modify, and explore.
+
+---
+
+## 🌌 Author
+
+Created collaboratively with **むべさん**  
+as part of the ongoing **Zen‑Universe** project.
+
+
+
+
