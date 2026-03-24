@@ -11,3 +11,15 @@ function drawEntropy(){
     }
   }
 }
+
+
+
+let mode = "VALUE"; // or "ENTROPY"
+
+function draw(){
+  if(mode === "VALUE"){
+    drawValues();
+  } else {
+    drawEntropy();
+  }
+}
