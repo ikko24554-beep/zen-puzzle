@@ -62,3 +62,22 @@ This produces stable, interpretable behavior.
 
 Entropy is computed per cell:
 
+
+
+
+
+
+
+A cell may receive multiple inputs.  
+If more than two exist, Zen‑Universe rules apply:
+
+- Use the **maximum** and **minimum** values  
+- Discard the rest  
+
+This produces stable, interpretable behavior.
+
+---
+
+## 🧪 Zen Entropy
+
+Entropy is computed per cell:
